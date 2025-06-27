@@ -35,15 +35,69 @@
                 opacity: .5;
             }
         }
+        
+        /* Print Styles */
+        @media print {
+            body {
+                background: white !important;
+                color: black !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .print-only {
+                display: block !important;
+            }
+            .glass-card {
+                background: white !important;
+                backdrop-filter: none !important;
+                border: 2px solid #e5e7eb !important;
+                box-shadow: none !important;
+            }
+            .gradient-text {
+                background: none !important;
+                -webkit-background-clip: unset !important;
+                -webkit-text-fill-color: unset !important;
+                background-clip: unset !important;
+                color: #1f2937 !important;
+            }
+            .text-white {
+                color: #1f2937 !important;
+            }
+            .text-gray-300,
+            .text-gray-400 {
+                color: #6b7280 !important;
+            }
+            .bg-gradient-to-r {
+                background: #f9fafb !important;
+            }
+            .border-white\\/10,
+            .border-white\\/20 {
+                border-color: #e5e7eb !important;
+            }
+        }
+        
+        .print-only {
+            display: none;
+        }
     </style>
 </head>
 <body class="bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 min-h-screen">
     <!-- Background Pattern -->
-    <div class="absolute inset-0 opacity-30 bg-[url('data:image/svg+xml,%3Csvg width=\"60\" height=\"60\" viewBox=\"0 0 60 60\" xmlns=\"http://www.w3.org/2000/svg\"%3E%3Cg fill=\"none\" fill-rule=\"evenodd\"%3E%3Cg fill=\"%23ffffff\" fill-opacity=\"0.1\"%3E%3Ccircle cx=\"30\" cy=\"30\" r=\"2\"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')]"></div>
+    <div class="no-print absolute inset-0 opacity-30 bg-[url('data:image/svg+xml,%3Csvg width=\"60\" height=\"60\" viewBox=\"0 0 60 60\" xmlns=\"http://www.w3.org/2000/svg\"%3E%3Cg fill=\"none\" fill-rule=\"evenodd\"%3E%3Cg fill=\"%23ffffff\" fill-opacity=\"0.1\"%3E%3Ccircle cx=\"30\" cy=\"30\" r=\"2\"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')]"></div>
+    
+    <!-- Print Header (only visible when printing) -->
+    <div class="print-only p-6 border-b-2 border-gray-300">
+        <div class="text-center">
+            <h1 class="text-3xl font-bold text-gray-900 mb-2">Livepeer LPT Grant Calculator</h1>
+            <p class="text-lg text-gray-700">Official Price Calculation Report</p>
+            <p class="text-sm text-gray-600 mt-2" id="print-timestamp"></p>
+        </div>
+    </div>
     
     <div class="relative z-10 container mx-auto px-4 py-8">
         <!-- Header -->
-        <div class="text-center mb-12">
+        <div class="text-center mb-12 no-print">
             <div class="flex items-center justify-center gap-3 mb-6">
                 <div class="p-3 bg-gradient-to-r from-green-400 to-blue-500 rounded-2xl shadow-lg">
                     <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -195,6 +249,25 @@
                                         <div class="text-white text-xl font-semibold" id="avg-price-display">$0.00</div>
                                     </div>
                                 </div>
+                                
+                                <!-- Print/Export Button -->
+                                <div class="mt-8 no-print">
+                                    <button 
+                                        id="print-btn" 
+                                        class="bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white font-semibold px-8 py-3 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl flex items-center gap-2 mx-auto"
+                                        onclick="printCalculation()"
+                                    >
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <polyline points="6,9 6,2 18,2 18,9"/>
+                                            <path d="M6,18H4a2,2 0 01-2-2V11a2,2 0 012-2H20a2,2 0 012,2v5a2,2 0 01-2,2H18"/>
+                                            <polyline points="6,14 18,14"/>
+                                        </svg>
+                                        Print Grant Documentation
+                                    </button>
+                                    <p class="text-sm text-gray-400 mt-2">
+                                        Generate timestamped proof for your grant application
+                                    </p>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -219,11 +292,44 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Print Documentation Section (only visible when printing) -->
+                <div class="print-only p-8 border-t-2 border-gray-300">
+                    <h3 class="text-2xl font-bold text-gray-900 mb-4">Calculation Details</h3>
+                    <div class="grid grid-cols-2 gap-6 mb-6">
+                        <div class="bg-gray-50 p-4 rounded-lg border">
+                            <h4 class="font-semibold text-gray-900 mb-2">Price Data Sources</h4>
+                            <p class="text-sm text-gray-700">• CoinGecko API</p>
+                            <p class="text-sm text-gray-700">• 60-day historical average</p>
+                            <p class="text-sm text-gray-700">• Real-time market data</p>
+                        </div>
+                        <div class="bg-gray-50 p-4 rounded-lg border">
+                            <h4 class="font-semibold text-gray-900 mb-2">Methodology</h4>
+                            <p class="text-sm text-gray-700">• USD Amount ÷ 60-day Average Price</p>
+                            <p class="text-sm text-gray-700">• Volatility-adjusted calculation</p>
+                            <p class="text-sm text-gray-700">• Industry-standard approach</p>
+                        </div>
+                    </div>
+                    <div class="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                        <h4 class="font-semibold text-gray-900 mb-2">Grant Application Notice</h4>
+                        <p class="text-sm text-gray-700">
+                            This calculation was generated on <span id="print-calculation-date"></span> using live market data 
+                            and a 60-day historical average to provide a fair and stable token amount for grant proposals. 
+                            The methodology reduces the impact of short-term price volatility on funding decisions.
+                        </p>
+                    </div>
+                    <div class="mt-6 text-center">
+                        <p class="text-sm text-gray-500">
+                            Generated by Livepeer Grant Calculator • 
+                            <span id="print-url">https://paulieb14.github.io/livepeer-lpt-grant-calculator/</span>
+                        </p>
+                    </div>
+                </div>
             </div>
         </div>
 
         <!-- Footer -->
-        <div class="text-center mt-12">
+        <div class="text-center mt-12 no-print">
             <p class="text-gray-400">
                 Built for the Livepeer community • Powered by CoinGecko API
             </p>
@@ -239,6 +345,7 @@
         let currentPrice = 0;
         let avgPrice60Day = 0;
         let loading = true;
+        let dataFetchTime = null;
 
         // DOM elements
         const currentPriceEl = document.getElementById('current-price');
@@ -300,11 +407,56 @@
             }
         }
 
+        // Print/Export functionality
+        function printCalculation() {
+            // Update print timestamps
+            const now = new Date();
+            const timeString = now.toLocaleString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                timeZoneName: 'short'
+            });
+            
+            document.getElementById('print-timestamp').textContent = `Generated on ${timeString}`;
+            document.getElementById('print-calculation-date').textContent = timeString;
+            document.getElementById('print-url').textContent = window.location.href;
+            
+            // Add calculation summary to print version
+            const printSummary = `
+                <div class="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <h4 class="font-semibold text-gray-900 mb-2">Calculation Summary</h4>
+                    <div class="text-sm text-gray-700">
+                        <p><strong>Grant Amount:</strong> ${grantAmountEl.textContent}</p>
+                        <p><strong>Current LPT Price:</strong> ${currentPriceEl.textContent}</p>
+                        <p><strong>60-Day Average Price:</strong> ${avgPriceEl.textContent}</p>
+                        <p><strong>Required LPT Amount:</strong> ${lptAmountEl.textContent}</p>
+                        <p><strong>Calculation:</strong> ${grantAmountEl.textContent} ÷ ${avgPriceEl.textContent} = ${lptAmountEl.textContent}</p>
+                    </div>
+                </div>
+            `;
+            
+            // Find the print documentation section and add summary
+            const printDoc = document.querySelector('.print-only .bg-yellow-50').parentNode;
+            const existingSummary = printDoc.querySelector('.bg-blue-50');
+            if (existingSummary) {
+                existingSummary.remove();
+            }
+            printDoc.insertAdjacentHTML('beforeend', printSummary);
+            
+            // Trigger print
+            window.print();
+        }
+
         // Fetch price data
         async function fetchPriceData() {
             try {
                 console.log('Fetching price data...');
                 updateStatusIndicator('loading');
+                dataFetchTime = new Date();
 
                 // Set fallback prices immediately
                 currentPrice = 6.25;
