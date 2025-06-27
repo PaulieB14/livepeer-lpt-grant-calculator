@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Livepeer LPT Grant Calculator</title>
     <meta name="description" content="Calculate LPT token amounts for grant proposals using 60-day average price. Perfect for Livepeer grant applications.">
-    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -16,18 +16,33 @@
         body {
             font-family: 'Inter', sans-serif;
         }
-        .livepeer-gradient {
-            background: linear-gradient(135deg, #00D4AA 0%, #1E40AF 100%);
+        /* Fallback styles */
+        .loading-fallback {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 50%, #0f172a 100%);
+            color: white;
+            font-size: 1.2rem;
         }
     </style>
 </head>
 <body class="bg-slate-900">
-    <div id="root"></div>
+    <div id="root">
+        <!-- Fallback content while React loads -->
+        <div class="loading-fallback">
+            <div class="text-center">
+                <div class="animate-pulse mb-4">⚡</div>
+                <div>Loading Livepeer Grant Calculator...</div>
+            </div>
+        </div>
+    </div>
     
     <script type="text/babel">
         const { useState, useEffect } = React;
         
-        // Lucide React icons (simplified versions)
+        // SVG Icons
         const Calculator = () => (
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <rect x="4" y="2" width="16" height="20" rx="2"/>
@@ -84,53 +99,79 @@
 
         const LivepeerGrantCalculator = () => {
             const [usdAmount, setUsdAmount] = useState('');
-            const [currentPrice, setCurrentPrice] = useState(0);
-            const [avgPrice60Day, setAvgPrice60Day] = useState(0);
+            const [currentPrice, setCurrentPrice] = useState(6.25); // Fallback price
+            const [avgPrice60Day, setAvgPrice60Day] = useState(5.85); // Fallback average
             const [lptRequired, setLptRequired] = useState(0);
             const [loading, setLoading] = useState(true);
             const [error, setError] = useState('');
-            const [priceHistory, setPriceHistory] = useState([]);
+            const [priceDataLoaded, setPriceDataLoaded] = useState(false);
 
-            // Fetch LPT price data
+            // Fetch LPT price data with better error handling
             useEffect(() => {
                 const fetchPriceData = async () => {
                     try {
                         setLoading(true);
                         setError('');
                         
-                        // Fetch current price
+                        console.log('Fetching price data...');
+                        
+                        // Fetch current price with timeout
+                        const currentController = new AbortController();
+                        const currentTimeout = setTimeout(() => currentController.abort(), 10000);
+                        
                         const currentResponse = await fetch(
-                            'https://api.coingecko.com/api/v3/simple/price?ids=livepeer&vs_currencies=usd&include_24hr_change=true'
+                            'https://api.coingecko.com/api/v3/simple/price?ids=livepeer&vs_currencies=usd&include_24hr_change=true',
+                            { signal: currentController.signal }
                         );
+                        clearTimeout(currentTimeout);
+                        
+                        if (!currentResponse.ok) {
+                            throw new Error(`HTTP error! status: ${currentResponse.status}`);
+                        }
+                        
                         const currentData = await currentResponse.json();
+                        console.log('Current price data:', currentData);
                         
                         if (currentData.livepeer) {
                             setCurrentPrice(currentData.livepeer.usd);
                         }
                         
-                        // Fetch 60-day historical data
-                        const historicalResponse = await fetch(
-                            'https://api.coingecko.com/api/v3/coins/livepeer/market_chart?vs_currency=usd&days=60&interval=daily'
-                        );
-                        const historicalData = await historicalResponse.json();
+                        // Fetch 60-day historical data with timeout
+                        const histController = new AbortController();
+                        const histTimeout = setTimeout(() => histController.abort(), 15000);
                         
-                        if (historicalData.prices) {
+                        const historicalResponse = await fetch(
+                            'https://api.coingecko.com/api/v3/coins/livepeer/market_chart?vs_currency=usd&days=60&interval=daily',
+                            { signal: histController.signal }
+                        );
+                        clearTimeout(histTimeout);
+                        
+                        if (!historicalResponse.ok) {
+                            throw new Error(`HTTP error! status: ${historicalResponse.status}`);
+                        }
+                        
+                        const historicalData = await historicalResponse.json();
+                        console.log('Historical data received:', historicalData.prices ? historicalData.prices.length + ' data points' : 'No data');
+                        
+                        if (historicalData.prices && historicalData.prices.length > 0) {
                             const prices = historicalData.prices.map(([timestamp, price]) => ({
                                 date: new Date(timestamp),
                                 price: price
                             }));
                             
-                            setPriceHistory(prices);
-                            
                             // Calculate 60-day average
                             const sum = prices.reduce((acc, item) => acc + item.price, 0);
                             const average = sum / prices.length;
                             setAvgPrice60Day(average);
+                            console.log('Calculated 60-day average:', average);
                         }
+                        
+                        setPriceDataLoaded(true);
                         
                     } catch (err) {
                         console.error('Error fetching price data:', err);
-                        setError('Failed to fetch price data. Please try again later.');
+                        setError(`Using fallback prices (API unavailable). Current: $${currentPrice}, 60d Avg: $${avgPrice60Day}`);
+                        setPriceDataLoaded(true);
                     } finally {
                         setLoading(false);
                     }
@@ -157,14 +198,14 @@
                     currency: 'USD',
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 2
-                }).format(amount);
+                }).format(amount || 0);
             };
 
             const formatLPT = (amount) => {
                 return new Intl.NumberFormat('en-US', {
                     minimumFractionDigits: 2,
                     maximumFractionDigits: 4
-                }).format(amount);
+                }).format(amount || 0);
             };
 
             const handleUsdChange = (e) => {
@@ -175,9 +216,11 @@
                 }
             };
 
+            console.log('Rendering with:', { loading, currentPrice, avgPrice60Day, error });
+
             return (
                 <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900">
-                    <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg width=\"60\" height=\"60\" viewBox=\"0 0 60 60\" xmlns=\"http://www.w3.org/2000/svg\"%3E%3Cg fill=\"none\" fill-rule=\"evenodd\"%3E%3Cg fill=\"%23ffffff\" fill-opacity=\"0.05\"%3E%3Ccircle cx=\"30\" cy=\"30\" r=\"2\"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')]" />
+                    <div className="absolute inset-0 opacity-30 bg-[url('data:image/svg+xml,%3Csvg width=\"60\" height=\"60\" viewBox=\"0 0 60 60\" xmlns=\"http://www.w3.org/2000/svg\"%3E%3Cg fill=\"none\" fill-rule=\"evenodd\"%3E%3Cg fill=\"%23ffffff\" fill-opacity=\"0.1\"%3E%3Ccircle cx=\"30\" cy=\"30\" r=\"2\"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')]" />
                     
                     <div className="relative z-10 container mx-auto px-4 py-8">
                         <div className="text-center mb-12">
@@ -252,8 +295,8 @@
 
                                 <div className="p-8">
                                     {error && (
-                                        <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-xl">
-                                            <p className="text-red-400 text-center">{error}</p>
+                                        <div className="mb-6 p-4 bg-yellow-500/10 border border-yellow-500/20 rounded-xl">
+                                            <p className="text-yellow-400 text-center text-sm">{error}</p>
                                         </div>
                                     )}
 
@@ -331,8 +374,10 @@
                                 Built for the Livepeer community • Powered by CoinGecko API
                             </p>
                             <div className="flex items-center justify-center gap-2 mt-4">
-                                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                                <span className="text-sm text-gray-500">Live price data</span>
+                                <div className={`w-2 h-2 rounded-full ${priceDataLoaded ? 'bg-green-400' : 'bg-yellow-400'} animate-pulse`}></div>
+                                <span className="text-sm text-gray-500">
+                                    {priceDataLoaded ? 'Live price data' : 'Loading price data...'}
+                                </span>
                             </div>
                         </div>
                     </div>
@@ -340,8 +385,26 @@
             );
         };
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<LivepeerGrantCalculator />);
+        // Wait for DOM to be ready, then render
+        try {
+            const root = ReactDOM.createRoot(document.getElementById('root'));
+            root.render(<LivepeerGrantCalculator />);
+            console.log('React app rendered successfully');
+        } catch (err) {
+            console.error('Error rendering React app:', err);
+            // Fallback to showing basic calculator
+            document.getElementById('root').innerHTML = `
+                <div class="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center">
+                    <div class="text-center text-white p-8">
+                        <h1 class="text-4xl font-bold mb-4">Livepeer Grant Calculator</h1>
+                        <p class="text-lg mb-8">Please refresh the page to load the calculator</p>
+                        <button onclick="location.reload()" class="bg-green-500 hover:bg-green-600 px-6 py-3 rounded-lg font-semibold transition-colors">
+                            Refresh Page
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
     </script>
 </body>
 </html>
