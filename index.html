@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Livepeer LPT Grant Calculator</title>
+    <meta name="description" content="Calculate LPT token amounts for grant proposals using 60-day average price. Perfect for Livepeer grant applications.">
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .livepeer-gradient {
+            background: linear-gradient(135deg, #00D4AA 0%, #1E40AF 100%);
+        }
+    </style>
+</head>
+<body class="bg-slate-900">
+    <div id="root"></div>
+    
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+        
+        // Lucide React icons (simplified versions)
+        const Calculator = () => (
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <rect x="4" y="2" width="16" height="20" rx="2"/>
+                <line x1="8" y1="6" x2="16" y2="6"/>
+                <line x1="8" y1="10" x2="16" y2="10"/>
+                <line x1="8" y1="14" x2="16" y2="14"/>
+                <line x1="8" y1="18" x2="12" y2="18"/>
+            </svg>
+        );
+        
+        const TrendingUp = () => (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+                <polyline points="17 6 23 6 23 12"/>
+            </svg>
+        );
+        
+        const DollarSign = () => (
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <line x1="12" y1="1" x2="12" y2="23"/>
+                <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+            </svg>
+        );
+        
+        const Calendar = () => (
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                <line x1="16" y1="2" x2="16" y2="6"/>
+                <line x1="8" y1="2" x2="8" y2="6"/>
+                <line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+        );
+        
+        const Info = () => (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="16" x2="12" y2="12"/>
+                <line x1="12" y1="8" x2="12.01" y2="8"/>
+            </svg>
+        );
+        
+        const Zap = () => (
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+            </svg>
+        );
+        
+        const Video = () => (
+            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <polygon points="23 7 16 12 23 17 23 7"/>
+                <rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>
+            </svg>
+        );
+
+        const LivepeerGrantCalculator = () => {
+            const [usdAmount, setUsdAmount] = useState('');
+            const [currentPrice, setCurrentPrice] = useState(0);
+            const [avgPrice60Day, setAvgPrice60Day] = useState(0);
+            const [lptRequired, setLptRequired] = useState(0);
+            const [loading, setLoading] = useState(true);
+            const [error, setError] = useState('');
+            const [priceHistory, setPriceHistory] = useState([]);
+
+            // Fetch LPT price data
+            useEffect(() => {
+                const fetchPriceData = async () => {
+                    try {
+                        setLoading(true);
+                        setError('');
+                        
+                        // Fetch current price
+                        const currentResponse = await fetch(
+                            'https://api.coingecko.com/api/v3/simple/price?ids=livepeer&vs_currencies=usd&include_24hr_change=true'
+                        );
+                        const currentData = await currentResponse.json();
+                        
+                        if (currentData.livepeer) {
+                            setCurrentPrice(currentData.livepeer.usd);
+                        }
+                        
+                        // Fetch 60-day historical data
+                        const historicalResponse = await fetch(
+                            'https://api.coingecko.com/api/v3/coins/livepeer/market_chart?vs_currency=usd&days=60&interval=daily'
+                        );
+                        const historicalData = await historicalResponse.json();
+                        
+                        if (historicalData.prices) {
+                            const prices = historicalData.prices.map(([timestamp, price]) => ({
+                                date: new Date(timestamp),
+                                price: price
+                            }));
+                            
+                            setPriceHistory(prices);
+                            
+                            // Calculate 60-day average
+                            const sum = prices.reduce((acc, item) => acc + item.price, 0);
+                            const average = sum / prices.length;
+                            setAvgPrice60Day(average);
+                        }
+                        
+                    } catch (err) {
+                        console.error('Error fetching price data:', err);
+                        setError('Failed to fetch price data. Please try again later.');
+                    } finally {
+                        setLoading(false);
+                    }
+                };
+
+                fetchPriceData();
+            }, []);
+
+            // Calculate LPT required when USD amount or average price changes
+            useEffect(() => {
+                if (usdAmount && avgPrice60Day > 0) {
+                    const amount = parseFloat(usdAmount);
+                    if (!isNaN(amount)) {
+                        setLptRequired(amount / avgPrice60Day);
+                    }
+                } else {
+                    setLptRequired(0);
+                }
+            }, [usdAmount, avgPrice60Day]);
+
+            const formatCurrency = (amount) => {
+                return new Intl.NumberFormat('en-US', {
+                    style: 'currency',
+                    currency: 'USD',
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2
+                }).format(amount);
+            };
+
+            const formatLPT = (amount) => {
+                return new Intl.NumberFormat('en-US', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 4
+                }).format(amount);
+            };
+
+            const handleUsdChange = (e) => {
+                const value = e.target.value;
+                // Only allow numbers and decimal point
+                if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                    setUsdAmount(value);
+                }
+            };
+
+            return (
+                <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900">
+                    <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg width=\"60\" height=\"60\" viewBox=\"0 0 60 60\" xmlns=\"http://www.w3.org/2000/svg\"%3E%3Cg fill=\"none\" fill-rule=\"evenodd\"%3E%3Cg fill=\"%23ffffff\" fill-opacity=\"0.05\"%3E%3Ccircle cx=\"30\" cy=\"30\" r=\"2\"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')]" />
+                    
+                    <div className="relative z-10 container mx-auto px-4 py-8">
+                        <div className="text-center mb-12">
+                            <div className="flex items-center justify-center gap-3 mb-6">
+                                <div className="p-3 bg-gradient-to-r from-green-400 to-blue-500 rounded-2xl shadow-lg">
+                                    <Video />
+                                </div>
+                                <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-green-400 via-blue-500 to-purple-600 bg-clip-text text-transparent">
+                                    Livepeer Grant Calculator
+                                </h1>
+                            </div>
+                            <p className="text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
+                                Calculate LPT token amounts for grant proposals using the 60-day average price. 
+                                Perfect for accurate USD-to-LPT conversions in your Livepeer grant applications.
+                            </p>
+                        </div>
+
+                        <div className="max-w-4xl mx-auto">
+                            <div className="bg-white/10 backdrop-blur-xl rounded-3xl border border-white/20 shadow-2xl overflow-hidden">
+                                <div className="bg-gradient-to-r from-green-500/20 to-blue-500/20 p-6 border-b border-white/10">
+                                    <div className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <Calculator />
+                                            <h2 className="text-2xl font-bold text-white">Grant Calculator</h2>
+                                        </div>
+                                        <div className="flex items-center gap-2 text-sm text-gray-400">
+                                            <Calendar />
+                                            <span>60-day average pricing</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="p-6 border-b border-white/10">
+                                    <div className="grid md:grid-cols-2 gap-6">
+                                        <div className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 rounded-2xl p-6 border border-blue-500/20">
+                                            <div className="flex items-center justify-between mb-3">
+                                                <div className="flex items-center gap-2">
+                                                    <TrendingUp />
+                                                    <span className="text-gray-300 font-medium">Current Price</span>
+                                                </div>
+                                                <Zap />
+                                            </div>
+                                            {loading ? (
+                                                <div className="animate-pulse bg-gray-700 h-8 rounded"></div>
+                                            ) : (
+                                                <div className="text-3xl font-bold text-white">
+                                                    {formatCurrency(currentPrice)}
+                                                </div>
+                                            )}
+                                            <p className="text-sm text-gray-400 mt-1">Live market price</p>
+                                        </div>
+
+                                        <div className="bg-gradient-to-r from-green-500/10 to-teal-500/10 rounded-2xl p-6 border border-green-500/20">
+                                            <div className="flex items-center justify-between mb-3">
+                                                <div className="flex items-center gap-2">
+                                                    <Calendar />
+                                                    <span className="text-gray-300 font-medium">60-Day Average</span>
+                                                </div>
+                                                <Info />
+                                            </div>
+                                            {loading ? (
+                                                <div className="animate-pulse bg-gray-700 h-8 rounded"></div>
+                                            ) : (
+                                                <div className="text-3xl font-bold text-white">
+                                                    {formatCurrency(avgPrice60Day)}
+                                                </div>
+                                            )}
+                                            <p className="text-sm text-gray-400 mt-1">Grant calculation basis</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="p-8">
+                                    {error && (
+                                        <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-xl">
+                                            <p className="text-red-400 text-center">{error}</p>
+                                        </div>
+                                    )}
+
+                                    <div className="space-y-8">
+                                        <div>
+                                            <label className="block text-lg font-semibold text-white mb-3">
+                                                Grant Amount (USD)
+                                            </label>
+                                            <div className="relative">
+                                                <div className="absolute left-4 top-1/2 transform -translate-y-1/2">
+                                                    <DollarSign />
+                                                </div>
+                                                <input
+                                                    type="text"
+                                                    value={usdAmount}
+                                                    onChange={handleUsdChange}
+                                                    placeholder="Enter USD amount (e.g., 10000)"
+                                                    className="w-full pl-14 pr-6 py-4 bg-white/5 border border-white/20 rounded-2xl text-white text-xl placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all"
+                                                />
+                                            </div>
+                                            <p className="text-sm text-gray-400 mt-2">
+                                                Enter the USD amount you need for your grant proposal
+                                            </p>
+                                        </div>
+
+                                        {usdAmount && avgPrice60Day > 0 && (
+                                            <div className="bg-gradient-to-r from-green-500/5 to-blue-500/5 rounded-2xl p-8 border border-green-500/20">
+                                                <div className="text-center">
+                                                    <div className="flex items-center justify-center gap-3 mb-4">
+                                                        <div className="p-2 bg-green-500/20 rounded-xl">
+                                                            <Zap />
+                                                        </div>
+                                                        <h3 className="text-2xl font-bold text-white">Required LPT Amount</h3>
+                                                    </div>
+                                                    
+                                                    <div className="text-5xl font-bold bg-gradient-to-r from-green-400 to-blue-500 bg-clip-text text-transparent mb-4">
+                                                        {formatLPT(lptRequired)} LPT
+                                                    </div>
+                                                    
+                                                    <div className="grid md:grid-cols-2 gap-6 mt-8">
+                                                        <div className="bg-white/5 rounded-xl p-4">
+                                                            <div className="text-gray-400 text-sm mb-1">Grant Amount</div>
+                                                            <div className="text-white text-xl font-semibold">{formatCurrency(parseFloat(usdAmount))}</div>
+                                                        </div>
+                                                        <div className="bg-white/5 rounded-xl p-4">
+                                                            <div className="text-gray-400 text-sm mb-1">Average Price (60d)</div>
+                                                            <div className="text-white text-xl font-semibold">{formatCurrency(avgPrice60Day)}</div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div className="bg-gradient-to-r from-slate-800/50 to-slate-700/50 p-6 border-t border-white/10">
+                                    <div className="flex items-start gap-3">
+                                        <Info />
+                                        <div className="text-sm text-gray-300 leading-relaxed">
+                                            <p className="font-medium text-white mb-2">How it works:</p>
+                                            <ul className="space-y-1 text-gray-400">
+                                                <li>• Uses 60-day historical average price for stable calculations</li>
+                                                <li>• Reduces volatility impact on grant proposals</li>
+                                                <li>• Data sourced from CoinGecko API for accuracy</li>
+                                                <li>• Perfect for Livepeer ecosystem grant applications</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="text-center mt-12">
+                            <p className="text-gray-400">
+                                Built for the Livepeer community • Powered by CoinGecko API
+                            </p>
+                            <div className="flex items-center justify-center gap-2 mt-4">
+                                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                                <span className="text-sm text-gray-500">Live price data</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<LivepeerGrantCalculator />);
+    </script>
+</body>
+</html>
