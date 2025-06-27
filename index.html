@@ -49,6 +49,35 @@
             border-color: rgb(34, 197, 94);
         }
         
+        /* Mobile-specific styles */
+        .mobile-share-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+        }
+        
+        .mobile-share-content {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+            border-radius: 20px 20px 0 0;
+            padding: 20px;
+            transform: translateY(100%);
+            transition: transform 0.3s ease;
+        }
+        
+        .mobile-share-modal.show .mobile-share-content {
+            transform: translateY(0);
+        }
+        
         /* Print Styles */
         @media print {
             body {
@@ -98,6 +127,87 @@
 <body class="bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 min-h-screen">
     <!-- Background Pattern -->
     <div class="no-print absolute inset-0 opacity-30 bg-[url('data:image/svg+xml,%3Csvg width=\"60\" height=\"60\" viewBox=\"0 0 60 60\" xmlns=\"http://www.w3.org/2000/svg\"%3E%3Cg fill=\"none\" fill-rule=\"evenodd\"%3E%3Cg fill=\"%23ffffff\" fill-opacity=\"0.1\"%3E%3Ccircle cx=\"30\" cy=\"30\" r=\"2\"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E')]"></div>
+    
+    <!-- Mobile Share Modal -->
+    <div id="mobile-share-modal" class="mobile-share-modal no-print">
+        <div class="mobile-share-content">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-white">Export Options</h3>
+                <button onclick="closeMobileShare()" class="text-gray-400 hover:text-white">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            
+            <div class="space-y-3">
+                <!-- Desktop Print -->
+                <button onclick="tryDesktopPrint()" class="w-full flex items-center gap-3 p-4 bg-white/10 rounded-lg hover:bg-white/20 transition-colors">
+                    <svg class="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <polyline points="6,9 6,2 18,2 18,9"/>
+                        <path d="M6,18H4a2,2 0 01-2-2V11a2,2 0 012-2H20a2,2 0 012,2v5a2,2 0 01-2,2H18"/>
+                        <polyline points="6,14 18,14"/>
+                    </svg>
+                    <div class="text-left">
+                        <div class="text-white font-medium">Print Document</div>
+                        <div class="text-gray-400 text-sm">Open print dialog (Desktop/Android)</div>
+                    </div>
+                </button>
+                
+                <!-- Copy Text -->
+                <button onclick="copyToClipboard()" class="w-full flex items-center gap-3 p-4 bg-white/10 rounded-lg hover:bg-white/20 transition-colors">
+                    <svg class="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                        <path d="M5 15H4a2 2 0 01-2-2V6a2 2 0 012-2h7a2 2 0 012 2v1"/>
+                    </svg>
+                    <div class="text-left">
+                        <div class="text-white font-medium">Copy Details</div>
+                        <div class="text-gray-400 text-sm">Copy calculation to clipboard</div>
+                    </div>
+                </button>
+                
+                <!-- Share -->
+                <button onclick="shareCalculation()" class="w-full flex items-center gap-3 p-4 bg-white/10 rounded-lg hover:bg-white/20 transition-colors">
+                    <svg class="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/>
+                        <polyline points="16,6 12,2 8,6"/>
+                        <line x1="12" y1="2" x2="12" y2="15"/>
+                    </svg>
+                    <div class="text-left">
+                        <div class="text-white font-medium">Share Results</div>
+                        <div class="text-gray-400 text-sm">Share via apps (iOS/Android)</div>
+                    </div>
+                </button>
+                
+                <!-- Email -->
+                <button onclick="emailCalculation()" class="w-full flex items-center gap-3 p-4 bg-white/10 rounded-lg hover:bg-white/20 transition-colors">
+                    <svg class="w-6 h-6 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                        <polyline points="22,6 12,13 2,6"/>
+                    </svg>
+                    <div class="text-left">
+                        <div class="text-white font-medium">Email Results</div>
+                        <div class="text-gray-400 text-sm">Send via email app</div>
+                    </div>
+                </button>
+                
+                <!-- Screenshot Instructions -->
+                <div class="p-4 bg-blue-500/10 rounded-lg border border-blue-500/20">
+                    <div class="flex items-start gap-3">
+                        <svg class="w-5 h-5 text-blue-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="10"/>
+                            <path d="M12 16v-4"/>
+                            <path d="M12 8h.01"/>
+                        </svg>
+                        <div class="text-sm">
+                            <div class="text-blue-300 font-medium mb-1">iOS Screenshot Tip:</div>
+                            <div class="text-blue-200">Take a screenshot, then tap "Full Page" in the preview to capture the complete calculation.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
     
     <!-- Print Header (only visible when printing) -->
     <div class="print-only p-6 border-b-2 border-gray-300">
@@ -236,22 +346,24 @@
                             </p>
                         </div>
 
-                        <!-- Always-visible Print Button -->
+                        <!-- Always-visible Export Button -->
                         <div class="no-print text-center">
                             <button 
-                                id="print-btn-always" 
+                                id="export-btn-always" 
                                 class="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold px-8 py-3 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl flex items-center gap-2 mx-auto"
-                                onclick="printCalculation()"
+                                onclick="handleExport()"
                             >
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <polyline points="6,9 6,2 18,2 18,9"/>
-                                    <path d="M6,18H4a2,2 0 01-2-2V11a2,2 0 012-2H20a2,2 0 012,2v5a2,2 0 01-2,2H18"/>
-                                    <polyline points="6,14 18,14"/>
+                                    <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/>
+                                    <polyline points="16,6 12,2 8,6"/>
+                                    <line x1="12" y1="2" x2="12" y2="15"/>
                                 </svg>
-                                Print Current Prices Report
+                                <span class="hidden sm:inline">Print/Export Report</span>
+                                <span class="sm:hidden">Export Report</span>
                             </button>
                             <p class="text-sm text-gray-400 mt-2">
-                                Generate timestamped price documentation (works with or without calculation)
+                                <span class="hidden sm:inline">Generate timestamped price documentation</span>
+                                <span class="sm:hidden">Export options for mobile & desktop</span>
                             </p>
                         </div>
 
@@ -270,7 +382,7 @@
                                 <!-- Rounding Options -->
                                 <div class="mb-6">
                                     <h4 class="text-lg font-semibold text-white mb-3">Choose Rounding Option:</h4>
-                                    <div class="grid md:grid-cols-3 gap-4">
+                                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                         <div class="radio-option border border-white/20 rounded-xl p-4" onclick="selectRounding('exact')">
                                             <input type="radio" name="rounding" value="exact" id="exact" class="hidden">
                                             <div class="text-center">
@@ -305,7 +417,7 @@
                                     0 LPT
                                 </div>
                                 
-                                <div class="grid md:grid-cols-3 gap-6 mt-8">
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 mt-8">
                                     <div class="bg-white/5 rounded-xl p-4">
                                         <div class="text-gray-400 text-sm mb-1">Grant Amount</div>
                                         <div class="text-white text-xl font-semibold" id="grant-amount-display">$0.00</div>
@@ -320,22 +432,24 @@
                                     </div>
                                 </div>
                                 
-                                <!-- Print/Export Button for calculations -->
+                                <!-- Export Button for calculations -->
                                 <div class="mt-8 no-print">
                                     <button 
-                                        id="print-btn-calc" 
+                                        id="export-btn-calc" 
                                         class="bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white font-semibold px-8 py-3 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl flex items-center gap-2 mx-auto"
-                                        onclick="printCalculation()"
+                                        onclick="handleExport()"
                                     >
                                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <polyline points="6,9 6,2 18,2 18,9"/>
-                                            <path d="M6,18H4a2,2 0 01-2-2V11a2,2 0 012-2H20a2,2 0 012,2v5a2,2 0 01-2,2H18"/>
-                                            <polyline points="6,14 18,14"/>
+                                            <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8"/>
+                                            <polyline points="16,6 12,2 8,6"/>
+                                            <line x1="12" y1="2" x2="12" y2="15"/>
                                         </svg>
-                                        Print Grant Documentation
+                                        <span class="hidden sm:inline">Print/Export Documentation</span>
+                                        <span class="sm:hidden">Export Results</span>
                                     </button>
                                     <p class="text-sm text-gray-400 mt-2">
-                                        Generate complete grant calculation proof
+                                        <span class="hidden sm:inline">Generate complete grant calculation proof</span>
+                                        <span class="sm:hidden">Multiple export options available</span>
                                     </p>
                                 </div>
                             </div>
@@ -437,6 +551,16 @@
         const roundAmountEl = document.getElementById('round-amount');
         const bufferAmountEl = document.getElementById('buffer-amount');
 
+        // Mobile detection
+        function isMobile() {
+            return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+                   window.innerWidth <= 768;
+        }
+
+        function isIOS() {
+            return /iPad|iPhone|iPod/.test(navigator.userAgent);
+        }
+
         // Utility functions
         function formatCurrency(amount) {
             return new Intl.NumberFormat('en-US', {
@@ -485,43 +609,38 @@
             }
         }
 
-        // Rounding selection
-        function selectRounding(type) {
-            selectedRounding = type;
-            
-            // Update UI
-            document.querySelectorAll('.radio-option').forEach(el => el.classList.remove('selected'));
-            document.querySelector(`[onclick="selectRounding('${type}')"]`).classList.add('selected');
-            
-            // Update method display and main amount
-            updateRoundingDisplay();
-        }
-
-        function updateRoundingDisplay() {
-            let selectedAmount = exactLPT;
-            let methodText = 'Exact Amount';
-            
-            switch(selectedRounding) {
-                case 'exact':
-                    selectedAmount = exactLPT;
-                    methodText = 'Exact Amount';
-                    break;
-                case 'round':
-                    selectedAmount = Math.ceil(exactLPT);
-                    methodText = 'Round to Whole';
-                    break;
-                case 'buffer':
-                    selectedAmount = Math.ceil(exactLPT * 1.05);
-                    methodText = 'Round Up + 5%';
-                    break;
+        // Export functionality
+        function handleExport() {
+            if (isMobile()) {
+                showMobileShare();
+            } else {
+                tryDesktopPrint();
             }
-            
-            lptAmountEl.textContent = formatLPT(selectedAmount, selectedRounding === 'exact' ? 4 : 0) + ' LPT';
-            roundingMethodEl.textContent = methodText;
         }
 
-        // Print/Export functionality
-        function printCalculation() {
+        function showMobileShare() {
+            const modal = document.getElementById('mobile-share-modal');
+            modal.style.display = 'block';
+            setTimeout(() => modal.classList.add('show'), 10);
+        }
+
+        function closeMobileShare() {
+            const modal = document.getElementById('mobile-share-modal');
+            modal.classList.remove('show');
+            setTimeout(() => modal.style.display = 'none', 300);
+        }
+
+        function tryDesktopPrint() {
+            updatePrintContent();
+            try {
+                window.print();
+            } catch (e) {
+                console.error('Print failed:', e);
+                showMobileShare();
+            }
+        }
+
+        function updatePrintContent() {
             // Update print timestamps
             const now = new Date();
             const timeString = now.toLocaleString('en-US', {
@@ -572,9 +691,154 @@
                 existingSummary.remove();
             }
             printDoc.insertAdjacentHTML('beforeend', printSummary);
+        }
+
+        function generateReportText() {
+            const now = new Date();
+            const timeString = now.toLocaleString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                timeZoneName: 'short'
+            });
             
-            // Trigger print
-            window.print();
+            const hasCalculation = !resultSection.classList.contains('hidden');
+            
+            if (hasCalculation) {
+                return `🎬 LIVEPEER GRANT CALCULATOR REPORT
+Generated: ${timeString}
+
+💰 GRANT CALCULATION:
+• Request Amount: ${grantAmountEl.textContent}
+• Current LPT Price: ${currentPriceEl.textContent}
+• 60-Day Average: ${avgPriceEl.textContent}
+• Exact LPT Required: ${formatLPT(exactLPT, 4)} LPT
+• Recommended Amount: ${lptAmountEl.textContent}
+• Rounding Method: ${roundingMethodEl.textContent}
+
+📊 METHODOLOGY:
+• Uses 60-day historical average for stability
+• Reduces price volatility impact
+• Industry-standard DAO approach
+• Data from CoinGecko API
+
+🔗 Calculator: https://paulieb14.github.io/livepeer-lpt-grant-calculator/
+
+This calculation provides transparent, volatility-adjusted pricing for Livepeer grant proposals.`;
+            } else {
+                return `🎬 LIVEPEER PRICE REFERENCE
+Generated: ${timeString}
+
+💰 CURRENT PRICING:
+• Live LPT Price: ${currentPriceEl.textContent}
+• 60-Day Average: ${avgPriceEl.textContent}
+• Data Source: CoinGecko API
+
+📊 FOR GRANT APPLICATIONS:
+Use the 60-day average for stable, fair pricing in your Livepeer grant proposals.
+
+🔗 Calculator: https://paulieb14.github.io/livepeer-lpt-grant-calculator/`;
+            }
+        }
+
+        async function copyToClipboard() {
+            try {
+                const text = generateReportText();
+                await navigator.clipboard.writeText(text);
+                
+                // Show success feedback
+                const button = event.target.closest('button');
+                const originalHTML = button.innerHTML;
+                button.innerHTML = `
+                    <svg class="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                    </svg>
+                    <div class="text-left">
+                        <div class="text-white font-medium">Copied!</div>
+                        <div class="text-gray-400 text-sm">Text copied to clipboard</div>
+                    </div>
+                `;
+                
+                setTimeout(() => {
+                    button.innerHTML = originalHTML;
+                    closeMobileShare();
+                }, 2000);
+                
+            } catch (err) {
+                console.error('Copy failed:', err);
+                // Fallback for older browsers
+                alert('Copy failed. Please take a screenshot instead.');
+            }
+        }
+
+        async function shareCalculation() {
+            const text = generateReportText();
+            const url = window.location.href;
+            
+            if (navigator.share) {
+                try {
+                    await navigator.share({
+                        title: 'Livepeer Grant Calculator Results',
+                        text: text,
+                        url: url
+                    });
+                    closeMobileShare();
+                } catch (err) {
+                    if (err.name !== 'AbortError') {
+                        console.error('Share failed:', err);
+                    }
+                }
+            } else {
+                // Fallback - copy to clipboard
+                copyToClipboard();
+            }
+        }
+
+        function emailCalculation() {
+            const text = generateReportText();
+            const subject = encodeURIComponent('Livepeer Grant Calculator Results');
+            const body = encodeURIComponent(text);
+            const mailtoLink = `mailto:?subject=${subject}&body=${body}`;
+            
+            window.location.href = mailtoLink;
+            closeMobileShare();
+        }
+
+        // Rounding selection
+        function selectRounding(type) {
+            selectedRounding = type;
+            
+            // Update UI
+            document.querySelectorAll('.radio-option').forEach(el => el.classList.remove('selected'));
+            document.querySelector(`[onclick="selectRounding('${type}')"]`).classList.add('selected');
+            
+            // Update method display and main amount
+            updateRoundingDisplay();
+        }
+
+        function updateRoundingDisplay() {
+            let selectedAmount = exactLPT;
+            let methodText = 'Exact Amount';
+            
+            switch(selectedRounding) {
+                case 'exact':
+                    selectedAmount = exactLPT;
+                    methodText = 'Exact Amount';
+                    break;
+                case 'round':
+                    selectedAmount = Math.ceil(exactLPT);
+                    methodText = 'Round to Whole';
+                    break;
+                case 'buffer':
+                    selectedAmount = Math.ceil(exactLPT * 1.05);
+                    methodText = 'Round Up + 5%';
+                    break;
+            }
+            
+            lptAmountEl.textContent = formatLPT(selectedAmount, selectedRounding === 'exact' ? 4 : 0) + ' LPT';
+            roundingMethodEl.textContent = methodText;
         }
 
         // Fetch price data
@@ -677,6 +941,13 @@
             }
             
             calculateLPT();
+        });
+
+        // Close modal on outside click
+        document.getElementById('mobile-share-modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeMobileShare();
+            }
         });
 
         // Initialize
