@@ -36,6 +36,19 @@
             }
         }
         
+        /* Custom radio styles */
+        .radio-option {
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .radio-option:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .radio-option.selected {
+            background: rgba(34, 197, 94, 0.1);
+            border-color: rgb(34, 197, 94);
+        }
+        
         /* Print Styles */
         @media print {
             body {
@@ -254,11 +267,45 @@
                                     <h3 class="text-2xl font-bold text-white">Required LPT Amount</h3>
                                 </div>
                                 
-                                <div class="text-5xl font-bold gradient-text mb-4" id="lpt-amount">
-                                    0.00 LPT
+                                <!-- Rounding Options -->
+                                <div class="mb-6">
+                                    <h4 class="text-lg font-semibold text-white mb-3">Choose Rounding Option:</h4>
+                                    <div class="grid md:grid-cols-3 gap-4">
+                                        <div class="radio-option border border-white/20 rounded-xl p-4" onclick="selectRounding('exact')">
+                                            <input type="radio" name="rounding" value="exact" id="exact" class="hidden">
+                                            <div class="text-center">
+                                                <div class="text-lg font-bold text-white" id="exact-amount">0.00 LPT</div>
+                                                <div class="text-sm text-gray-400 mt-1">Exact Amount</div>
+                                                <div class="text-xs text-gray-500 mt-1">Precise calculation</div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="radio-option border border-white/20 rounded-xl p-4 selected" onclick="selectRounding('round')">
+                                            <input type="radio" name="rounding" value="round" id="round" class="hidden" checked>
+                                            <div class="text-center">
+                                                <div class="text-lg font-bold text-white" id="round-amount">0 LPT</div>
+                                                <div class="text-sm text-gray-400 mt-1">Round to Whole</div>
+                                                <div class="text-xs text-gray-500 mt-1">Clean grant amount</div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="radio-option border border-white/20 rounded-xl p-4" onclick="selectRounding('buffer')">
+                                            <input type="radio" name="rounding" value="buffer" id="buffer" class="hidden">
+                                            <div class="text-center">
+                                                <div class="text-lg font-bold text-white" id="buffer-amount">0 LPT</div>
+                                                <div class="text-sm text-gray-400 mt-1">Round Up + 5%</div>
+                                                <div class="text-xs text-gray-500 mt-1">Price protection</div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                                 
-                                <div class="grid md:grid-cols-2 gap-6 mt-8">
+                                <!-- Selected Amount Display -->
+                                <div class="text-5xl font-bold gradient-text mb-4" id="lpt-amount">
+                                    0 LPT
+                                </div>
+                                
+                                <div class="grid md:grid-cols-3 gap-6 mt-8">
                                     <div class="bg-white/5 rounded-xl p-4">
                                         <div class="text-gray-400 text-sm mb-1">Grant Amount</div>
                                         <div class="text-white text-xl font-semibold" id="grant-amount-display">$0.00</div>
@@ -266,6 +313,10 @@
                                     <div class="bg-white/5 rounded-xl p-4">
                                         <div class="text-gray-400 text-sm mb-1">Average Price (60d)</div>
                                         <div class="text-white text-xl font-semibold" id="avg-price-display">$0.00</div>
+                                    </div>
+                                    <div class="bg-white/5 rounded-xl p-4">
+                                        <div class="text-gray-400 text-sm mb-1">Rounding Method</div>
+                                        <div class="text-white text-xl font-semibold" id="rounding-method">Round to Whole</div>
                                     </div>
                                 </div>
                                 
@@ -365,6 +416,8 @@
         let avgPrice60Day = 0;
         let loading = true;
         let dataFetchTime = null;
+        let exactLPT = 0;
+        let selectedRounding = 'round';
 
         // DOM elements
         const currentPriceEl = document.getElementById('current-price');
@@ -374,9 +427,15 @@
         const lptAmountEl = document.getElementById('lpt-amount');
         const grantAmountEl = document.getElementById('grant-amount-display');
         const avgPriceDisplayEl = document.getElementById('avg-price-display');
+        const roundingMethodEl = document.getElementById('rounding-method');
         const errorMessageEl = document.getElementById('error-message');
         const statusIndicator = document.getElementById('status-indicator');
         const statusText = document.getElementById('status-text');
+
+        // Rounding option elements
+        const exactAmountEl = document.getElementById('exact-amount');
+        const roundAmountEl = document.getElementById('round-amount');
+        const bufferAmountEl = document.getElementById('buffer-amount');
 
         // Utility functions
         function formatCurrency(amount) {
@@ -388,10 +447,10 @@
             }).format(amount || 0);
         }
 
-        function formatLPT(amount) {
+        function formatLPT(amount, decimals = 4) {
             return new Intl.NumberFormat('en-US', {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 4
+                minimumFractionDigits: decimals > 0 ? 2 : 0,
+                maximumFractionDigits: decimals
             }).format(amount || 0);
         }
 
@@ -426,6 +485,41 @@
             }
         }
 
+        // Rounding selection
+        function selectRounding(type) {
+            selectedRounding = type;
+            
+            // Update UI
+            document.querySelectorAll('.radio-option').forEach(el => el.classList.remove('selected'));
+            document.querySelector(`[onclick="selectRounding('${type}')"]`).classList.add('selected');
+            
+            // Update method display and main amount
+            updateRoundingDisplay();
+        }
+
+        function updateRoundingDisplay() {
+            let selectedAmount = exactLPT;
+            let methodText = 'Exact Amount';
+            
+            switch(selectedRounding) {
+                case 'exact':
+                    selectedAmount = exactLPT;
+                    methodText = 'Exact Amount';
+                    break;
+                case 'round':
+                    selectedAmount = Math.ceil(exactLPT);
+                    methodText = 'Round to Whole';
+                    break;
+                case 'buffer':
+                    selectedAmount = Math.ceil(exactLPT * 1.05);
+                    methodText = 'Round Up + 5%';
+                    break;
+            }
+            
+            lptAmountEl.textContent = formatLPT(selectedAmount, selectedRounding === 'exact' ? 4 : 0) + ' LPT';
+            roundingMethodEl.textContent = methodText;
+        }
+
         // Print/Export functionality
         function printCalculation() {
             // Update print timestamps
@@ -453,8 +547,10 @@
                         <p><strong>Grant Amount:</strong> ${grantAmountEl.textContent}</p>
                         <p><strong>Current LPT Price:</strong> ${currentPriceEl.textContent}</p>
                         <p><strong>60-Day Average Price:</strong> ${avgPriceEl.textContent}</p>
-                        <p><strong>Required LPT Amount:</strong> ${lptAmountEl.textContent}</p>
-                        <p><strong>Calculation:</strong> ${grantAmountEl.textContent} ÷ ${avgPriceEl.textContent} = ${lptAmountEl.textContent}</p>
+                        <p><strong>Exact LPT Required:</strong> ${formatLPT(exactLPT, 4)} LPT</p>
+                        <p><strong>Recommended Amount:</strong> ${lptAmountEl.textContent}</p>
+                        <p><strong>Rounding Method:</strong> ${roundingMethodEl.textContent}</p>
+                        <p><strong>Base Calculation:</strong> ${grantAmountEl.textContent} ÷ ${avgPriceEl.textContent} = ${formatLPT(exactLPT, 4)} LPT</p>
                     </div>
                 </div>
             ` : `
@@ -552,15 +648,21 @@
             const usdAmount = parseFloat(usdAmountInput.value);
             
             if (usdAmount && usdAmount > 0 && avgPrice60Day > 0) {
-                const lptRequired = usdAmount / avgPrice60Day;
+                exactLPT = usdAmount / avgPrice60Day;
                 
-                lptAmountEl.textContent = formatLPT(lptRequired) + ' LPT';
+                // Update all rounding option displays
+                exactAmountEl.textContent = formatLPT(exactLPT, 4) + ' LPT';
+                roundAmountEl.textContent = formatLPT(Math.ceil(exactLPT), 0) + ' LPT';
+                bufferAmountEl.textContent = formatLPT(Math.ceil(exactLPT * 1.05), 0) + ' LPT';
+                
                 grantAmountEl.textContent = formatCurrency(usdAmount);
                 avgPriceDisplayEl.textContent = formatCurrency(avgPrice60Day);
                 
+                updateRoundingDisplay();
                 resultSection.classList.remove('hidden');
             } else {
                 resultSection.classList.add('hidden');
+                exactLPT = 0;
             }
         }
 
