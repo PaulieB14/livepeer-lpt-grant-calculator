@@ -223,6 +223,25 @@
                             </p>
                         </div>
 
+                        <!-- Always-visible Print Button -->
+                        <div class="no-print text-center">
+                            <button 
+                                id="print-btn-always" 
+                                class="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white font-semibold px-8 py-3 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl flex items-center gap-2 mx-auto"
+                                onclick="printCalculation()"
+                            >
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <polyline points="6,9 6,2 18,2 18,9"/>
+                                    <path d="M6,18H4a2,2 0 01-2-2V11a2,2 0 012-2H20a2,2 0 012,2v5a2,2 0 01-2,2H18"/>
+                                    <polyline points="6,14 18,14"/>
+                                </svg>
+                                Print Current Prices Report
+                            </button>
+                            <p class="text-sm text-gray-400 mt-2">
+                                Generate timestamped price documentation (works with or without calculation)
+                            </p>
+                        </div>
+
                         <!-- LPT Result -->
                         <div id="result-section" class="hidden bg-gradient-to-r from-green-500/5 to-blue-500/5 rounded-2xl p-8 border border-green-500/20">
                             <div class="text-center">
@@ -250,10 +269,10 @@
                                     </div>
                                 </div>
                                 
-                                <!-- Print/Export Button -->
+                                <!-- Print/Export Button for calculations -->
                                 <div class="mt-8 no-print">
                                     <button 
-                                        id="print-btn" 
+                                        id="print-btn-calc" 
                                         class="bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white font-semibold px-8 py-3 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl flex items-center gap-2 mx-auto"
                                         onclick="printCalculation()"
                                     >
@@ -265,7 +284,7 @@
                                         Print Grant Documentation
                                     </button>
                                     <p class="text-sm text-gray-400 mt-2">
-                                        Generate timestamped proof for your grant application
+                                        Generate complete grant calculation proof
                                     </p>
                                 </div>
                             </div>
@@ -426,7 +445,8 @@
             document.getElementById('print-url').textContent = window.location.href;
             
             // Add calculation summary to print version
-            const printSummary = `
+            const hasCalculation = !resultSection.classList.contains('hidden');
+            const printSummary = hasCalculation ? `
                 <div class="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                     <h4 class="font-semibold text-gray-900 mb-2">Calculation Summary</h4>
                     <div class="text-sm text-gray-700">
@@ -435,6 +455,16 @@
                         <p><strong>60-Day Average Price:</strong> ${avgPriceEl.textContent}</p>
                         <p><strong>Required LPT Amount:</strong> ${lptAmountEl.textContent}</p>
                         <p><strong>Calculation:</strong> ${grantAmountEl.textContent} ÷ ${avgPriceEl.textContent} = ${lptAmountEl.textContent}</p>
+                    </div>
+                </div>
+            ` : `
+                <div class="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                    <h4 class="font-semibold text-gray-900 mb-2">Current Price Data</h4>
+                    <div class="text-sm text-gray-700">
+                        <p><strong>Current LPT Price:</strong> ${currentPriceEl.textContent}</p>
+                        <p><strong>60-Day Average Price:</strong> ${avgPriceEl.textContent}</p>
+                        <p><strong>Data Source:</strong> CoinGecko API</p>
+                        <p><strong>Use Case:</strong> Grant calculation reference</p>
                     </div>
                 </div>
             `;
@@ -490,6 +520,7 @@
                         avgPrice60Day = sum / historicalData.prices.length;
                         console.log('Calculated 60-day average:', avgPrice60Day);
                         updateStatusIndicator('success');
+                        hideError();
                     } else {
                         updateStatusIndicator('fallback');
                         showError('Using fallback prices - API data incomplete');
